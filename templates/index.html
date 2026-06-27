@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PhishGuard AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#070d14;--bg2:#0c1520;--bg3:#111e2e;--border:rgba(0,200,255,.12);
+  --teal:#00c8ff;--teal-dim:rgba(0,200,255,.12);
+  --green:#00e5a0;--green-dim:rgba(0,229,160,.12);
+  --red:#ff4d6d;--red-dim:rgba(255,77,109,.12);
+  --yellow:#ffd166;--yellow-dim:rgba(255,209,102,.12);
+  --purple:#b48eff;--purple-dim:rgba(180,142,255,.12);
+  --text:#c8dce8;--text-dim:#5a7a90;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+  --radius:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,200,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,200,255,.025) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+.wrapper{position:relative;z-index:1;max-width:1060px;margin:0 auto;padding:0 20px 80px;}
+
+/* HEADER */
+header{padding:44px 0 28px;text-align:center;}
+.logo-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;}
+.shield{width:44px;height:44px;background:linear-gradient(135deg,var(--teal),#0077b6);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 0 24px rgba(0,200,255,.3);}
+h1{font-family:var(--mono);font-size:clamp(1.5rem,4vw,2.2rem);color:#fff;letter-spacing:-.5px;}
+h1 span{color:var(--teal);}
+.tagline{font-size:.88rem;color:var(--text-dim);margin-top:6px;font-weight:300;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:5px;margin-bottom:24px;overflow-x:auto;}
+.tab-btn{flex:1;min-width:110px;padding:10px 12px;background:transparent;border:none;
+  border-radius:10px;color:var(--text-dim);font-family:var(--sans);font-size:.84rem;
+  font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:6px;}
+.tab-btn:hover{color:var(--text);background:var(--bg3);}
+.tab-btn.active{background:var(--teal-dim);color:var(--teal);box-shadow:inset 0 0 0 1px rgba(0,200,255,.3);}
+
+/* PANELS */
+.panel{display:none;}
+.panel.active{display:block;animation:fadeIn .22s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+.card-title{font-family:var(--mono);font-size:.72rem;color:var(--teal);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;}
+
+/* INPUTS */
+textarea,input[type=text],input[type=url]{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--sans);font-size:.94rem;padding:13px;
+  resize:vertical;outline:none;transition:border-color .2s,box-shadow .2s;}
+textarea:focus,input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,200,255,.07);}
+textarea{min-height:150px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:8px;
+  border:none;font-family:var(--sans);font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-primary{background:linear-gradient(135deg,var(--teal),#0088cc);color:#000;
+  box-shadow:0 0 20px rgba(0,200,255,.25);}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal);}
+.btn-mode{padding:8px 14px;font-size:.8rem;background:var(--bg3);color:var(--text-dim);
+  border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:var(--sans);
+  font-weight:500;transition:all .2s;}
+.btn-mode.active{border-color:var(--teal);color:var(--teal);background:var(--teal-dim);}
+.btn-mode:hover{color:var(--teal);}
+
+/* VERDICT BADGE */
+.badge{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:100px;
+  font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.badge-safe{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,229,160,.3);}
+.badge-phishing{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,109,.3);}
+.badge-suspicious{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,209,102,.3);}
+.badge-error{background:var(--bg3);color:var(--text-dim);border:1px solid var(--border);}
+
+/* RESULT */
+.result-box{display:none;margin-top:18px;animation:fadeIn .3s ease;}
+.result-box.show{display:block;}
+.result-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+.section-label{font-family:var(--mono);font-size:.67rem;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+/* BAR */
+.bar-wrap{margin-top:14px;}
+.bar-meta{display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-dim);margin-bottom:5px;}
+.bar-track{height:5px;background:var(--bg);border-radius:100px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--teal),var(--green));
+  transition:width .8s cubic-bezier(.34,1.56,.64,1);}
+
+/* SCORE RING */
+.ring-wrap{display:flex;align-items:center;gap:16px;}
+.ring{position:relative;width:74px;height:74px;flex-shrink:0;}
+.ring svg{transform:rotate(-90deg);}
+.ring .track{fill:none;stroke:var(--bg);stroke-width:7;}
+.ring .fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.34,1.56,.64,1);}
+.ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:1rem;font-weight:700;}
+
+/* WARNINGS LIST */
+.warn-list{list-style:none;}
+.warn-list li{padding:10px 13px;background:var(--bg);border-left:3px solid var(--red);
+  border-radius:0 6px 6px 0;margin-bottom:7px;font-size:.86rem;line-height:1.55;}
+.warn-list li.y{border-left-color:var(--yellow);}
+.warn-list li.g{border-left-color:var(--green);}
+.warn-list li.p{border-left-color:var(--purple);}
+
+/* GLYPH FINDING CARD */
+.finding-group{margin-bottom:16px;}
+.finding-group-title{font-family:var(--mono);font-size:.68rem;color:var(--text-dim);
+  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.finding-item{padding:11px 14px;background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);margin-bottom:7px;}
+.finding-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.finding-msg{font-size:.86rem;line-height:1.55;flex:1;}
+.sev-chip{font-family:var(--mono);font-size:.62rem;padding:2px 7px;border-radius:4px;
+  font-weight:700;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
+.sev-critical{background:var(--red-dim);color:var(--red);}
+.sev-high{background:var(--yellow-dim);color:var(--yellow);}
+.sev-medium{background:var(--purple-dim);color:var(--purple);}
+.sev-low{background:var(--bg3);color:var(--text-dim);}
+.finding-chars{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;}
+.char-box{font-family:var(--mono);font-size:1.05rem;padding:2px 10px;border-radius:5px;}
+.char-bad{background:var(--red-dim);color:var(--red);}
+.char-good{background:var(--green-dim);color:var(--green);}
+.char-script{font-size:.7rem;color:var(--text-dim);background:var(--bg3);
+  padding:2px 7px;border-radius:4px;}
+.finding-ctx{margin-top:5px;font-size:.76rem;color:var(--text-dim);font-family:var(--mono);}
+
+/* GLYPH EXAMPLES GRID */
+.glyph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px;margin-top:12px;}
+.glyph-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:12px 10px;text-align:center;}
+.glyph-demo{font-family:var(--mono);font-size:1.2rem;color:var(--red);margin-bottom:4px;}
+.glyph-demo span{color:var(--green);}
+.glyph-desc{font-size:.73rem;color:var(--text-dim);line-height:1.4;}
+
+/* DROP ZONE */
+.drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:32px 20px;
+  text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--teal);background:var(--teal-dim);}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.dz-icon{font-size:2rem;margin-bottom:8px;}
+.dz-text{color:var(--text-dim);font-size:.88rem;}
+.dz-text strong{color:var(--teal);}
+.preview-img{max-width:100%;max-height:260px;border-radius:8px;margin-top:14px;
+  border:1px solid var(--border);display:none;}
+
+/* URL META CHIPS */
+.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
+@media(max-width:520px){.meta-grid{grid-template-columns:1fr;}}
+.meta-chip{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px;}
+.meta-chip .lbl{font-family:var(--mono);font-size:.65rem;color:var(--text-dim);
+  letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.meta-chip .val{font-family:var(--mono);font-size:.83rem;color:var(--text);}
+
+/* REDIRECT CHAIN */
+.redir-chain{display:flex;align-items:center;flex-wrap:wrap;gap:5px;
+  font-family:var(--mono);font-size:.72rem;}
+.redir-chain span{background:var(--bg3);padding:3px 8px;border-radius:4px;color:var(--teal);}
+.redir-chain .arr{color:var(--text-dim);}
+
+/* OCR TEXT */
+.ocr-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:13px;
+  font-size:.8rem;color:var(--text-dim);max-height:140px;overflow-y:auto;
+  white-space:pre-wrap;font-family:var(--mono);line-height:1.6;}
+
+/* SPINNER */
+.spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;
+  border-radius:50%;animation:spin .65s linear infinite;display:none;}
+.spinner.on{display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CLEAN BOX */
+.clean-box{padding:13px;background:var(--green-dim);border-radius:8px;color:var(--green);
+  font-size:.88rem;border:1px solid rgba(0,229,160,.3);display:none;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- HEADER -->
+<header>
+  <div class="logo-row">
+    <div class="shield">🛡️</div>
+    <h1>Phish<span>Guard</span> AI</h1>
+  </div>
+  <p class="tagline">BERT + Gemini 2.5 Flash · Trained on 14,028+ Emails · Multi-Layer Detection</p>
+</header>
+
+<!-- TABS -->
+<div class="tabs" role="tablist">
+  <button class="tab-btn active" onclick="switchTab('email',this)">✉️ Email Analyzer</button>
+  <button class="tab-btn" onclick="switchTab('url',this)">🔗 URL Sandbox</button>
+  <button class="tab-btn" onclick="switchTab('image',this)">📸 Screenshot Scan</button>
+  <button class="tab-btn" onclick="switchTab('glyph',this)">🔍 Glyph Checker</button>
+</div>
+
+<!-- ══════════════════════════ TAB 1: EMAIL ══════════════════════════ -->
+<div id="panel-email" class="panel active">
+  <div class="card">
+    <div class="card-title">// Paste Email Content</div>
+    <textarea id="email-input" placeholder="Paste the full email body here — including sender, links, and any suspicious text…"></textarea>
+    <div style="display:flex;gap:10px;margin-top:13px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="analyzeEmail()" id="email-btn">
+        <span class="spinner" id="email-spin"></span>
+        <span id="email-btn-lbl">🔍 Analyze Email</span>
+      </button>
+      <button class="btn btn-ghost" onclick="clearEl('email-input','email-result')">Clear</button>
+    </div>
+  </div>
+  <div class="result-box" id="email-result">
+    <div class="card">
+      <div class="result-header">
+        <div><div class="section-label">Verdict</div><div id="email-badge"></div></div>
+        <div style="text-align:right;">
+          <div class="section-label">BERT Confidence</div>
+          <div id="email-conf" style="font-family:var(--mono);font-size:1.3rem;color:var(--teal);"></div>
+        </div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-meta"><span>Risk Confidence</span><span id="email-bar-pct"></span></div>
+        <div class="bar-track"><div class="bar-fill" id="email-bar" style="width:0%"></div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-label">Gemini Explanation</div>
+      <p id="email-explain" style="font-size:.91rem;line-height:1.7;"></p>
+      <div id="email-glyph-sec" style="display:none;">
+        <div class="divider"></div>
+        <div class="section-label">⚠️ Character Trick Warnings</div>
+        <ul class="warn-list" id="email-glyph-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ TAB 2: URL ══════════════════════════ -->
+<div id="panel-url" class="panel">
+  <div class="card">
+    <div class="card-title">// URL Safety Sandbox</div>
+    <p style="font-size:.87rem;color:var(--text-dim);margin-bottom:13px;line-height:1.6;">
+      Paste any suspicious link. We analyze it <strong style="color:var(--teal)">without opening it</strong> — SSL, redirects, domain tricks, brand impersonation, homoglyphs.
+    </p>
+    <input type="url" id="url-input" placeholder="https://paypa1-security.com/verify"/>
+    <div style="display:flex;gap:10px;margin-top:13px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="checkUrl()" id="url-btn">
+        <span class="spinner" id="url-spin"></span>
+        <span id="url-btn-lbl">🔎 Scan URL (Safe Mode)</span>
+      </button>
+      <button class="btn btn-ghost" onclick="document.getElementById('url-input').value='';document.getElementById('url-result').classList.remove('show')">Clear</button>
+    </div>
+  </div>
+  <div class="result-box" id="url-result">
+    <div class="card">
+      <div class="result-header">
+        <div><div class="section-label">Final Verdict</div><div id="url-badge"></div></div>
+        <div class="ring-wrap">
+          <div class="ring">
+            <svg viewBox="0 0 74 74" width="74" height="74">
+              <circle class="track" cx="37" cy="37" r="30"/>
+              <circle class="fill" id="url-ring" cx="37" cy="37" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="num" id="url-ring-num">0</div>
+          </div>
+          <div><div class="section-label">Risk Score</div><div style="font-size:.78rem;color:var(--text-dim);">0=safe · 100=phishing</div></div>
+        </div>
+      </div>
+      <div class="meta-grid" id="url-meta"></div>
+      <div class="divider"></div>
+      <div class="section-label">Security Findings</div>
+      <ul class="warn-list" id="url-findings"></ul>
+      <div id="url-redir-sec" style="display:none;margin-top:13px;">
+        <div class="section-label">Redirect Chain</div>
+        <div class="redir-chain" id="url-redir"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-label">Gemini Assessment</div>
+      <p id="url-gemini-explain" style="font-size:.91rem;line-height:1.7;"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ TAB 3: IMAGE ══════════════════════════ -->
+<div id="panel-image" class="panel">
+  <div class="card">
+    <div class="card-title">// Screenshot / Image Analyzer</div>
+    <p style="font-size:.87rem;color:var(--text-dim);margin-bottom:15px;line-height:1.6;">
+      Can't copy-paste? Upload any screenshot. Gemini Vision will <strong style="color:var(--teal)">OCR all text and links</strong>, detect homoglyphs visually, and flag phishing indicators.
+    </p>
+    <div class="drop-zone" id="img-dz"
+         ondragover="dz('img-dz',true,event)" ondragleave="dz('img-dz',false,event)" ondrop="dzDrop('img',event)">
+      <input type="file" id="img-file" accept="image/*" onchange="previewImg('img',event)"/>
+      <div class="dz-icon">📸</div>
+      <div class="dz-text"><strong>Click to upload</strong> or drag &amp; drop<br/>Screenshots, email photos, suspicious messages</div>
+      <img class="preview-img" id="img-preview" alt="Preview"/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:13px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="analyzeImage()" id="img-btn">
+        <span class="spinner" id="img-spin"></span>
+        <span id="img-btn-lbl">🔬 Analyze Image</span>
+      </button>
+      <button class="btn btn-ghost" onclick="clearImg()">Clear</button>
+    </div>
+  </div>
+  <div class="result-box" id="img-result">
+    <div class="card">
+      <div class="result-header">
+        <div><div class="section-label">Vision Verdict</div><div id="img-badge"></div></div>
+        <div class="ring-wrap">
+          <div class="ring">
+            <svg viewBox="0 0 74 74" width="74" height="74">
+              <circle class="track" cx="37" cy="37" r="30"/>
+              <circle class="fill" id="img-ring" cx="37" cy="37" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="num" id="img-ring-num">0</div>
+          </div>
+          <div><div class="section-label">Risk Score</div><div style="font-size:.78rem;color:var(--text-dim);">Gemini Vision</div></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-label">Explanation</div>
+      <p id="img-explain" style="font-size:.91rem;line-height:1.7;margin-bottom:14px;"></p>
+      <div id="img-ocr-sec" style="display:none;">
+        <div class="section-label">📝 Extracted Text (OCR)</div>
+        <div class="ocr-box" id="img-ocr"></div>
+      </div>
+      <div id="img-urls-sec" style="display:none;margin-top:13px;">
+        <div class="divider"></div>
+        <div class="section-label">🔗 URLs Detected in Image</div>
+        <ul class="warn-list" id="img-urls-list"></ul>
+      </div>
+      <div id="img-glyph-sec" style="display:none;margin-top:13px;">
+        <div class="divider"></div>
+        <div class="section-label">⚠️ Homoglyph Warnings</div>
+        <ul class="warn-list" id="img-glyph-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ TAB 4: GLYPH ══════════════════════════ -->
+<div id="panel-glyph" class="panel">
+  <div class="card">
+    <div class="card-title">// Homoglyph &amp; Character Trick Detector</div>
+    <p style="font-size:.87rem;color:var(--text-dim);margin-bottom:14px;line-height:1.6;">
+      Phishing attackers use visually identical characters to fool you.
+      Paste text <strong style="color:var(--teal)">and/or upload a screenshot</strong> — both are analyzed.
+      Detects <strong style="color:var(--yellow)">both directions</strong> of the l / I trick:
+      capital-I faking lowercase-l <em>(paypaI)</em> and lowercase-l faking capital-I <em>(lnstagram)</em>.
+    </p>
+
+    <!-- Reference examples -->
+    <div class="section-label" style="margin-bottom:8px;">Attack Patterns Reference</div>
+    <div class="glyph-grid">
+      <div class="glyph-card"><div class="glyph-demo">rn → <span>m</span></div><div class="glyph-desc">arnazon.com → amazon.com</div></div>
+      <div class="glyph-card"><div class="glyph-demo">0 → <span>O</span></div><div class="glyph-desc">g00gle.com → google.com</div></div>
+      <div class="glyph-card"><div class="glyph-demo">1 → <span>l</span></div><div class="glyph-desc">paypa1.com → paypal.com</div></div>
+      <div class="glyph-card"><div class="glyph-demo">I → <span>l</span></div><div class="glyph-desc">paypaI.com — capital-I fakes l</div></div>
+      <div class="glyph-card"><div class="glyph-demo">l → <span>I</span></div><div class="glyph-desc">lnstagram — l fakes capital-I</div></div>
+      <div class="glyph-card"><div class="glyph-demo">vv → <span>w</span></div><div class="glyph-desc">vvellsfargo.com → wellsfargo</div></div>
+      <div class="glyph-card"><div class="glyph-demo">а → <span>a</span></div><div class="glyph-desc">Cyrillic а (U+0430) ≠ Latin a</div></div>
+      <div class="glyph-card"><div class="glyph-demo">о → <span>o</span></div><div class="glyph-desc">Cyrillic о (U+043E) ≠ Latin o</div></div>
+    </div>
+
+    <!-- Input mode -->
+    <div style="display:flex;gap:6px;margin-top:20px;margin-bottom:12px;flex-wrap:wrap;">
+      <button class="btn-mode active" id="gm-text"  onclick="setGM('text')">✏️ Text / URL</button>
+      <button class="btn-mode"        id="gm-image" onclick="setGM('image')">📸 Image</button>
+      <button class="btn-mode"        id="gm-both"  onclick="setGM('both')">✏️ + 📸 Both</button>
+    </div>
+
+    <!-- Text input -->
+    <div id="glyph-text-sec">
+      <textarea id="glyph-input"
+        placeholder="Paste any text, URL, or domain here…&#10;&#10;Try:  http://paypaI.com/verify&#10;Try:  http://lnstagram.com/login&#10;Try:  http://arnazon.com/order&#10;Try:  http://paypa1.com/secure"
+        style="min-height:110px;"></textarea>
+    </div>
+
+    <!-- Image input -->
+    <div id="glyph-img-sec" style="display:none;margin-top:12px;">
+      <div class="drop-zone" id="glyph-dz"
+           ondragover="dz('glyph-dz',true,event)" ondragleave="dz('glyph-dz',false,event)" ondrop="dzDrop('glyph',event)">
+        <input type="file" id="glyph-file" accept="image/*" onchange="previewImg('glyph',event)"/>
+        <div class="dz-icon">🔍</div>
+        <div class="dz-text"><strong>Upload screenshot</strong> — Gemini Vision OCRs all text &amp; links,<br/>then every character is checked for tricks</div>
+        <img class="preview-img" id="glyph-preview" alt="Preview"/>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="checkGlyphs()" id="glyph-btn">
+        <span class="spinner" id="glyph-spin"></span>
+        <span id="glyph-btn-lbl">🔬 Detect Character Tricks</span>
+      </button>
+      <button class="btn btn-ghost" onclick="clearGlyph()">Clear</button>
+    </div>
+  </div>
+
+  <div class="result-box" id="glyph-result">
+    <div class="card">
+      <div class="result-header">
+        <div><div class="section-label">Detection Result</div><div id="glyph-badge"></div></div>
+        <div style="text-align:right;">
+          <div class="section-label">Issues Found</div>
+          <div id="glyph-count" style="font-family:var(--mono);font-size:2rem;color:var(--teal);"></div>
+        </div>
+      </div>
+
+      <div class="clean-box" id="glyph-clean">✅ No homoglyphs, Unicode spoofing, or brand tricks detected.</div>
+      <div id="glyph-findings"></div>
+
+      <!-- From image OCR -->
+      <div id="glyph-ocr-sec" style="display:none;margin-top:14px;">
+        <div class="divider"></div>
+        <div class="section-label">📝 OCR Text Extracted from Image</div>
+        <div class="ocr-box" id="glyph-ocr"></div>
+      </div>
+      <div id="glyph-ocr-urls-sec" style="display:none;margin-top:12px;">
+        <div class="section-label">🔗 URLs Found in Image</div>
+        <ul class="warn-list" id="glyph-ocr-urls"></ul>
+      </div>
+      <div id="glyph-urgency-sec" style="display:none;margin-top:12px;">
+        <div class="section-label">⚡ Urgency Phrases in Image</div>
+        <div id="glyph-urgency-txt" style="font-size:.86rem;color:var(--yellow);padding:10px 13px;background:var(--yellow-dim);border-radius:8px;border:1px solid rgba(255,209,102,.3);"></div>
+      </div>
+      <!-- Image-level verdict (when image was scanned) -->
+      <div id="glyph-img-verdict-sec" style="display:none;margin-top:14px;">
+        <div class="divider"></div>
+        <div class="section-label">Image Overall Verdict</div>
+        <div id="glyph-img-badge" style="margin-bottom:8px;"></div>
+        <p id="glyph-img-explain" style="font-size:.88rem;color:var(--text-dim);line-height:1.6;"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+
+<script>
+// ────────────────────────────────────────────────────────────
+//  UTILITIES
+// ────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function setLoad(btnId, spinId, lblId, on, defaultLbl) {
+  document.getElementById(btnId).disabled = on;
+  document.getElementById(spinId).classList.toggle('on', on);
+  document.getElementById(lblId).textContent = on ? 'Analyzing…' : defaultLbl;
+}
+
+function clearEl(inputId, resultId) {
+  document.getElementById(inputId).value = '';
+  document.getElementById(resultId).classList.remove('show');
+}
+
+function warnClass(msg) {
+  if (msg.startsWith('✅')) return 'g';
+  if (msg.startsWith('🟡')) return 'y';
+  if (msg.startsWith('🤖')) return 'p';
+  return '';
+}
+
+function badge(status) {
+  const m = {
+    safe:       ['badge-safe',       '✅ SAFE'],
+    phishing:   ['badge-phishing',   '🚨 PHISHING DETECTED'],
+    suspicious: ['badge-suspicious', '⚠️ SUSPICIOUS'],
+    error:      ['badge-error',      '⚡ ERROR'],
+  };
+  const [cls, lbl] = m[status] || m.error;
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+function animateRing(ringId, numId, score, status) {
+  const ring = document.getElementById(ringId);
+  const num  = document.getElementById(numId);
+  const circ = 188.5;
+  const color = {safe:'#00e5a0',suspicious:'#ffd166',phishing:'#ff4d6d',error:'#5a7a90'};
+  ring.style.stroke = color[status] || '#5a7a90';
+  ring.style.strokeDashoffset = circ - (score / 100) * circ;
+  num.style.color = color[status] || '#5a7a90';
+  let c = 0, step = score / 40;
+  const iv = setInterval(() => { c = Math.min(c + step, score); num.textContent = Math.round(c); if (c >= score) clearInterval(iv); }, 16);
+}
+
+function animateBar(barId, pctId, val) {
+  document.getElementById(barId).style.width = val + '%';
+  document.getElementById(pctId).textContent = val.toFixed(1) + '%';
+}
+
+// Severity → CSS class + label
+function sevChip(sev) {
+  const m = {critical:['sev-critical','CRITICAL'],high:['sev-high','HIGH'],medium:['sev-medium','MED'],low:['sev-low','LOW']};
+  const [cls, lbl] = m[sev] || m.low;
+  return `<span class="sev-chip ${cls}">${lbl}</span>`;
+}
+
+// Type label
+const TYPE_LABELS = {
+  unicode_homoglyph: '🔡 Unicode Spoof',
+  capital_I_as_l:    '👁️ Capital-I → l',
+  l_as_capital_I:    '👁️ lowercase-l → I',
+  capital_I_in_domain:'👁️ Capital-I in Domain',
+  rn_as_m:           '🔤 rn → m',
+  vv_as_w:           '🔤 vv → w',
+  zero_as_o:         '🔢 0 → O',
+  one_as_l:          '🔢 1 → l',
+  suspicious_tld:    '🌐 Suspicious TLD',
+  known_spoof:       '🚨 Known Phishing Domain',
+  brand_in_domain:   '⚠️ Brand Impersonation',
+  at_trick:          '@ Sign Trick',
+  image_detected:    '📸 Image/OCR Finding',
+};
+
+function renderFindings(findings, containerId) {
+  const ctr = document.getElementById(containerId);
+  if (!findings || !findings.length) { ctr.innerHTML = ''; return; }
+
+  // Group by type
+  const groups = {};
+  findings.forEach(f => {
+    const t = f.type || 'other';
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(f);
+  });
+
+  ctr.innerHTML = Object.entries(groups).map(([type, items]) => `
+    <div class="finding-group">
+      <div class="finding-group-title">${TYPE_LABELS[type] || type} &nbsp;(${items.length})</div>
+      ${items.map(f => `
+        <div class="finding-item">
+          <div class="finding-top">
+            <div class="finding-msg">${f.message}</div>
+            ${sevChip(f.severity)}
+          </div>
+          ${(f.char || f.looks_like) ? `
+            <div class="finding-chars">
+              ${f.char ? `<span class="char-box char-bad">${f.char}</span><span style="color:var(--text-dim);font-size:.8rem;">looks like</span>` : ''}
+              ${f.looks_like ? `<span class="char-box char-good">${f.looks_like}</span>` : ''}
+              ${f.script ? `<span class="char-script">${f.script}</span>` : ''}
+            </div>` : ''}
+          ${f.context ? `<div class="finding-ctx">context: "…${f.context}…"</div>` : ''}
+        </div>`).join('')}
+    </div>`
+  ).join('');
+}
+
+// ────────────────────────────────────────────────────────────
+//  TAB 1: EMAIL
+// ────────────────────────────────────────────────────────────
+async function analyzeEmail() {
+  const text = document.getElementById('email-input').value.trim();
+  if (!text) { alert('Please paste an email first.'); return; }
+  setLoad('email-btn','email-spin','email-btn-lbl',true,'🔍 Analyze Email');
+  try {
+    const r = await fetch('/analyze', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: text })
+    });
+    const d = await r.json();
+    document.getElementById('email-badge').innerHTML = badge(d.status);
+    document.getElementById('email-conf').textContent = d.confidence + '%';
+    document.getElementById('email-explain').textContent = d.explanation || '';
+    animateBar('email-bar','email-bar-pct', d.confidence);
+
+    const gs = document.getElementById('email-glyph-sec');
+    const gl = document.getElementById('email-glyph-list');
+    if (d.homoglyph_warnings && d.homoglyph_warnings.length) {
+      gs.style.display = 'block';
+      gl.innerHTML = d.homoglyph_warnings.map(w => `<li class="${warnClass(w)}">${w}</li>`).join('');
+    } else { gs.style.display = 'none'; }
+    document.getElementById('email-result').classList.add('show');
+  } catch(e) { alert('Error: ' + e.message); }
+  finally { setLoad('email-btn','email-spin','email-btn-lbl',false,'🔍 Analyze Email'); }
+}
+
+// ────────────────────────────────────────────────────────────
+//  TAB 2: URL SANDBOX
+// ────────────────────────────────────────────────────────────
+async function checkUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { alert('Please enter a URL first.'); return; }
+  setLoad('url-btn','url-spin','url-btn-lbl',true,'🔎 Scan URL (Safe Mode)');
+  try {
+    const r = await fetch('/check-url', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const d = await r.json();
+    const verdict = d.final_verdict || d.risk_level || 'safe';
+    document.getElementById('url-badge').innerHTML = badge(verdict);
+    animateRing('url-ring','url-ring-num', Math.min(d.risk_score||0,100), verdict);
+
+    document.getElementById('url-meta').innerHTML = [
+      {l:'Domain',    v: d.domain || '—'},
+      {l:'IP',        v: d.ip_address || '—'},
+      {l:'SSL',       v: d.ssl_valid===true ? '✅ Valid' : d.ssl_valid===false ? '🔴 Invalid' : '🟡 Unknown'},
+      {l:'Risk Score',v: (d.risk_score||0) + ' / 100'},
+    ].map(c=>`<div class="meta-chip"><div class="lbl">${c.l}</div><div class="val">${c.v}</div></div>`).join('');
+
+    document.getElementById('url-findings').innerHTML =
+      (d.findings||[]).map(f=>`<li class="${warnClass(f)}">${f}</li>`).join('') ||
+      '<li class="g">✅ No issues found</li>';
+
+    const rs = document.getElementById('url-redir-sec');
+    if (d.redirect_chain && d.redirect_chain.length > 1) {
+      rs.style.display = 'block';
+      document.getElementById('url-redir').innerHTML =
+        d.redirect_chain.map((u,i)=>(i?'<span class="arr">→</span>':'')+`<span>${u}</span>`).join('');
+    } else { rs.style.display = 'none'; }
+
+    document.getElementById('url-gemini-explain').textContent = d.gemini_explanation || '';
+    document.getElementById('url-result').classList.add('show');
+  } catch(e) { alert('Error: ' + e.message); }
+  finally { setLoad('url-btn','url-spin','url-btn-lbl',false,'🔎 Scan URL (Safe Mode)'); }
+}
+
+// ────────────────────────────────────────────────────────────
+//  TAB 3: IMAGE ANALYZER
+// ────────────────────────────────────────────────────────────
+let imgB64 = null, imgMime = 'image/jpeg';
+
+function previewImg(prefix, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const mime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    const b64  = data.split(',')[1];
+    if (prefix === 'img') { imgB64 = b64; imgMime = mime; }
+    else                  { glyphB64 = b64; glyphMime = mime; }
+    const prev = document.getElementById(prefix + '-preview');
+    prev.src = data; prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function dz(id, on, e) {
+  e.preventDefault();
+  document.getElementById(id).classList.toggle('drag-over', on);
+}
+function dzDrop(prefix, e) {
+  e.preventDefault();
+  const dzId = prefix === 'img' ? 'img-dz' : 'glyph-dz';
+  document.getElementById(dzId).classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer(); dt.items.add(file);
+    const fileInputId = prefix === 'img' ? 'img-file' : 'glyph-file';
+    document.getElementById(fileInputId).files = dt.files;
+    previewImg(prefix, { target: { files: [file] } });
+  }
+}
+
+function clearImg() {
+  imgB64 = null;
+  document.getElementById('img-file').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-result').classList.remove('show');
+}
+
+async function analyzeImage() {
+  if (!imgB64) { alert('Please upload an image first.'); return; }
+  setLoad('img-btn','img-spin','img-btn-lbl',true,'🔬 Analyze Image');
+  try {
+    const r = await fetch('/analyze-image', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ image_base64: imgB64, mime_type: imgMime })
+    });
+    const d = await r.json();
+    document.getElementById('img-badge').innerHTML = badge(d.status);
+    animateRing('img-ring','img-ring-num', Math.min(d.risk_score||0,100), d.status);
+    document.getElementById('img-explain').textContent = d.explanation || '';
+
+    const os = document.getElementById('img-ocr-sec');
+    if (d.extracted_text && d.extracted_text.length > 3) {
+      os.style.display = 'block';
+      document.getElementById('img-ocr').textContent = d.extracted_text;
+    } else { os.style.display = 'none'; }
+
+    const us = document.getElementById('img-urls-sec');
+    if (d.detected_urls && d.detected_urls.toUpperCase() !== 'NONE' && d.detected_urls.trim()) {
+      us.style.display = 'block';
+      document.getElementById('img-urls-list').innerHTML =
+        d.detected_urls.split(',').map(u => `<li><code style="font-family:var(--mono);font-size:.8rem;">${u.trim()}</code></li>`).join('');
+    } else { us.style.display = 'none'; }
+
+    const hs = document.getElementById('img-glyph-sec');
+    if (d.homoglyph_warnings && d.homoglyph_warnings.length) {
+      hs.style.display = 'block';
+      document.getElementById('img-glyph-list').innerHTML =
+        d.homoglyph_warnings.map(w=>`<li class="${warnClass(w)}">${w}</li>`).join('');
+    } else { hs.style.display = 'none'; }
+
+    document.getElementById('img-result').classList.add('show');
+  } catch(e) { alert('Error: ' + e.message); }
+  finally { setLoad('img-btn','img-spin','img-btn-lbl',false,'🔬 Analyze Image'); }
+}
+
+// ────────────────────────────────────────────────────────────
+//  TAB 4: GLYPH CHECKER
+// ────────────────────────────────────────────────────────────
+let glyphMode = 'text', glyphB64 = null, glyphMime = 'image/jpeg';
+
+function setGM(mode) {
+  glyphMode = mode;
+  document.getElementById('glyph-text-sec').style.display  = mode === 'image' ? 'none' : 'block';
+  document.getElementById('glyph-img-sec').style.display   = mode === 'text'  ? 'none' : 'block';
+  ['text','image','both'].forEach(m => {
+    document.getElementById('gm-' + m).classList.toggle('active', m === mode);
+  });
+}
+
+function clearGlyph() {
+  glyphB64 = null;
+  document.getElementById('glyph-input').value = '';
+  document.getElementById('glyph-file').value  = '';
+  const p = document.getElementById('glyph-preview');
+  p.src = ''; p.style.display = 'none';
+  document.getElementById('glyph-result').classList.remove('show');
+}
+
+async function checkGlyphs() {
+  const text    = document.getElementById('glyph-input').value.trim();
+  const needImg = glyphMode !== 'text';
+  const needTxt = glyphMode !== 'image';
+
+  if (needTxt && !text && !glyphB64) { alert('Please paste text or upload an image.'); return; }
+  if (needImg && !glyphB64) { alert('Please upload an image for image mode.'); return; }
+
+  setLoad('glyph-btn','glyph-spin','glyph-btn-lbl',true,'🔬 Detecting…');
+
+  try {
+    const payload = {};
+    if (needTxt && text) payload.text = text;
+    if (needImg && glyphB64) { payload.image_base64 = glyphB64; payload.mime_type = glyphMime; }
+
+    const r = await fetch('/check-homoglyphs', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+
+    const verdict = d.overall_verdict || (d.is_suspicious ? 'suspicious' : 'safe');
+    document.getElementById('glyph-badge').innerHTML = badge(verdict);
+    document.getElementById('glyph-count').textContent = d.warning_count || '0';
+
+    const clean = document.getElementById('glyph-clean');
+    if (d.is_suspicious && d.findings && d.findings.length) {
+      clean.style.display = 'none';
+      renderFindings(d.findings, 'glyph-findings');
+    } else {
+      clean.style.display = 'block';
+      document.getElementById('glyph-findings').innerHTML = '';
+    }
+
+    // OCR results from image
+    const os = document.getElementById('glyph-ocr-sec');
+    if (d.image_ocr_text && d.image_ocr_text.length > 3) {
+      os.style.display = 'block';
+      document.getElementById('glyph-ocr').textContent = d.image_ocr_text;
+    } else { os.style.display = 'none'; }
+
+    const us = document.getElementById('glyph-ocr-urls-sec');
+    if (d.image_detected_urls && d.image_detected_urls.toUpperCase() !== 'NONE' && d.image_detected_urls.trim()) {
+      us.style.display = 'block';
+      document.getElementById('glyph-ocr-urls').innerHTML =
+        d.image_detected_urls.split(',').map(u=>`<li><code style="font-family:var(--mono);font-size:.8rem;">${u.trim()}</code></li>`).join('');
+    } else { us.style.display = 'none'; }
+
+    const urg = document.getElementById('glyph-urgency-sec');
+    if (d.image_urgency && d.image_urgency.toUpperCase() !== 'NONE' && d.image_urgency.trim()) {
+      urg.style.display = 'block';
+      document.getElementById('glyph-urgency-txt').textContent = d.image_urgency;
+    } else { urg.style.display = 'none'; }
+
+    // Image-level verdict
+    const ivs = document.getElementById('glyph-img-verdict-sec');
+    if (d.image_status && d.image_status !== 'error') {
+      ivs.style.display = 'block';
+      document.getElementById('glyph-img-badge').innerHTML = badge(d.image_status);
+      document.getElementById('glyph-img-explain').textContent = d.image_explanation || '';
+    } else { ivs.style.display = 'none'; }
+
+    document.getElementById('glyph-result').classList.add('show');
+  } catch(e) { alert('Error: ' + e.message); }
+  finally { setLoad('glyph-btn','glyph-spin','glyph-btn-lbl',false,'🔬 Detect Character Tricks'); }
+}
+
+// Ctrl+Enter shortcut
+document.addEventListener('keydown', e => {
+  if (!e.ctrlKey || e.key !== 'Enter') return;
+  const id = document.querySelector('.panel.active').id;
+  if (id === 'panel-email') analyzeEmail();
+  else if (id === 'panel-url') checkUrl();
+  else if (id === 'panel-glyph') checkGlyphs();
+});
+</script>
+</body>
+</html>
